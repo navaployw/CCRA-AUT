@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.javainuse</groupId>
     <artifactId>client-credentials-grant</artifactId>
-    <version>4.0.0</version>
+    <version>4.0.1</version>
     <name>boot-oauth2-authorization</name>
     <description>Client Credentials Grant Type</description>
 
