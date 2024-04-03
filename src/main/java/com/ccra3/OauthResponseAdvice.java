@@ -49,6 +49,8 @@ public class OauthResponseAdvice implements ResponseBodyAdvice<Object> {
     SpmGroupService spmGroup;
     @Autowired
     TrnJsonService trnJson;
+    @Autowired
+    private SymmetricCipher cipher;
     
     ApiTokenService apiToken;
     private String userId;
@@ -96,7 +98,7 @@ public class OauthResponseAdvice implements ResponseBodyAdvice<Object> {
                 String authorization = requestHttp.getHeader("Authorization");
                 infoLog = String.format("authorization::  %s",authorization);
                 logger.info(infoLog);
-                SymmetricCipher cy = SymmetricCipher.getInstance();
+                SymmetricCipher cy = cipher.builder();
                 TrnJson trnJsonObjRequest = new TrnJson();
                 TrnJson trnJsonObjResponse = new TrnJson();
 

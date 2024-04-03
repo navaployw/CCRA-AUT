@@ -7,7 +7,6 @@ package com.ccra3;
 
 import ch.qos.logback.classic.Logger;
 
-import com.javainuse.config.ClientModel;
 
 
 import com.nimbusds.jose.jwk.JWKSet;
@@ -62,6 +61,10 @@ public class AuthorizationServerConfig {
 
     @Autowired
     private ViewApiUserService userService;
+    @Autowired
+    private SymmetricCipher cipher;
+    @Autowired
+    AesEcbEncryptDecrypt encryptObject;
     private List<ViewApiUser> userList = new ArrayList<>();
     private AuthenticationManager authenticationManager;
 
@@ -83,8 +86,9 @@ public class AuthorizationServerConfig {
 
         try {
             userList = userService.findByflagActive(Boolean.TRUE);;
-            SymmetricCipher cy = SymmetricCipher.getInstance();
-            AesEcbEncryptDecrypt encryptObject = new AesEcbEncryptDecrypt();
+            SymmetricCipher cy = cipher.builder();
+
+            
             for (int i = 0; i < userList.size(); i++) {
                 if (userList.get(i).getPassword() != null && userList.get(i).getUserID() != null) {
                     logger.info("userList.get(i).getUserID():" + userList.get(i).getUserID());
@@ -92,7 +96,7 @@ public class AuthorizationServerConfig {
                     String passDecode = cy.decrypt(userList.get(i).getPassword());
                     String infoLog = String.format(">>>passDecode::  %s", passDecode);
                     logger.info(infoLog);
-                    AesEcbEncryptDecrypt.setKey(userList.get(i).getSecretKey());
+                    encryptObject.setKey(userList.get(i).getSecretKey());
                     ClientModel cc1 = new ClientModel();
                     infoLog = String.format(">>>userList.get(i).getUserId()::  %s", userList.get(i).getUserID());
                     logger.info(infoLog);

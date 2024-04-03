@@ -13,12 +13,21 @@ import javax.crypto.spec.SecretKeySpec;
 import org.apache.commons.codec.binary.Base64;
 import ch.qos.logback.classic.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
+import com.ccra3.util.TokenizeTransformationProvider;
 
 
 
+@Component
 public class AesEcbEncryptDecrypt {
 
     private final Logger LOG = (Logger) LoggerFactory.getLogger(AesEcbEncryptDecrypt.class);
+    
+    @Autowired
+    TokenizeTransformationProvider skp;
+    
     private static SecretKeySpec secretKey;
     private static byte[] key;
 
@@ -59,7 +68,7 @@ public class AesEcbEncryptDecrypt {
     public String encrypt(String strToEncrypt) {
         String encrypted = "";
         try {
-            Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5Padding");
+            Cipher cipher = Cipher.getInstance(skp.PROVIDER_SECRET_KEY);
 
             cipher.init(Cipher.ENCRYPT_MODE, secretKey);
             encrypted = Base64.encodeBase64String(cipher.doFinal(strToEncrypt.getBytes(UTF_8)));
@@ -75,7 +84,7 @@ public class AesEcbEncryptDecrypt {
     public String decrypt(String strToDecrypt) {
         String decrypted = "";
         try {
-            Cipher cipher = Cipher.getInstance("AES/ECB/PKCS5PADDING");
+            Cipher cipher = Cipher.getInstance(skp.PROVIDER_SECRET_KEY);
 
             cipher.init(Cipher.DECRYPT_MODE, secretKey);
             decrypted = new String(cipher.doFinal(Base64.decodeBase64(strToDecrypt)));

@@ -7,8 +7,13 @@ package com.ccra3;
         
 import ch.qos.logback.classic.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
+
 import com.arg.util.ErrorMessages;
 import com.arg.util.GenericRuntimeException;
+import com.ccra3.util.TokenizeTransformationProvider;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -33,9 +38,15 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.KeyGenerator;
 import javax.crypto.NoSuchPaddingException;
 import org.apache.commons.codec.binary.Base64;
-public final class SymmetricCipher {
+@Component
+public final class SymmetricCipher
+{
 
     private final Logger logger = (Logger) LoggerFactory.getLogger(this.getClass());
+
+    @Autowired
+    TokenizeTransformationProvider skp;
+    
     private static final int[] STREAM = {
         0x724f, 0x3041, 0x4258, 0x4e79, 0x4142, 0x3971, 0x5958, 0x5a68, 0x6543,
         0x356a, 0x636e, 0x6c77, 0x6447, 0x3875, 0x6333, 0x426c, 0x5979, 0x3554,
@@ -53,15 +64,18 @@ public final class SymmetricCipher {
 
     private static final String DEFAULT_SECRET_KEY_TEXT;
 
-    static {
+    static
+    {
         char[] buffer = new char[STREAM.length * 2];
 
-        for (int index = 0, i = 0; index < STREAM.length; i = ++index * 2) {
+        for (int index = 0, i = 0; index < STREAM.length; i = ++index * 2)
+        {
             int tmp;
 
             buffer[i] = (char) ((STREAM[index] & 0xff00) >> 8);
             buffer[i + 1] = (char) ((STREAM[index] & 0x00ff) >> 0);
         }
+
         DEFAULT_SECRET_KEY_TEXT = new String(buffer);
     }
 
@@ -70,138 +84,174 @@ public final class SymmetricCipher {
     });
 
     private static final String DEFAULT_CIPHER_ALGORITHM = DEFAULT_KEY_ALGORITHM;
-
     private static Key defaultKey = null;
-
     private static Cipher defaultCipher = null;
 
-    private static SymmetricCipher instance = null;
+    // private static SymmetricCipher instance = null;
 
     private Key key = null;
-
     private Cipher cipher = null;
+    private String userKeyAlgor = null;
+    private String userCipherAlgor = null;
+    private String user_key = null;    
+    private  String infoLog  = "";
 
-    private String user_key_algor = null;
+    // private SymmetricCipher() throws Exception
+    // {
+        
 
-    private String user_cipher_algor = null;
+    //     // instance = this;
+    // }
 
-    private String user_key = null;
-    private SymmetricCipher() throws Exception {
+    public SymmetricCipher builder() throws Exception
+    {
+        defaultKey = decodeKey(DEFAULT_SECRET_KEY_TEXT);
+        defaultCipher = Cipher.getInstance(DEFAULT_CIPHER_ALGORITHM);
 
-        try {
-            defaultKey = decodeKey(DEFAULT_SECRET_KEY_TEXT);
-            defaultCipher = Cipher.getInstance(DEFAULT_CIPHER_ALGORITHM);
-            String infoLog = String.format("defaultKey>>> %s", defaultKey);
+        infoLog= String.format("defaultKey>>> %s", defaultKey);
+        logger.info(infoLog);
+
+        infoLog = String.format("defaultCipher>>> %s", defaultCipher);
+        logger.info(infoLog);
+
+        infoLog = String.format("DEFAULT_SECRET_KEY_TEXT>>> %s", DEFAULT_SECRET_KEY_TEXT);
+        logger.info(infoLog);
+
+        if(defaultKey.getEncoded() != null){
+            infoLog = String.format("defaultKey>>> %s", new Base64().encodeAsString(defaultKey.getEncoded()));
             logger.info(infoLog);
-            infoLog = String.format("defaultCipher>>> %s", defaultCipher);
-            logger.info(infoLog);
-            infoLog = String.format("DEFAULT_SECRET_KEY_TEXT>>> %s", DEFAULT_SECRET_KEY_TEXT);
-            logger.info(infoLog);
-            if (defaultKey != null) {
-                infoLog = String.format("defaultKey>>> %s", new Base64().encodeToString(defaultKey.getEncoded()));
-                logger.info(infoLog);
-            }
-
-
-            user_key_algor = "AES";
-            user_cipher_algor = "AES";
-            user_key = "Y9cFfapTWdmk+7VNqjS1zor7p65xVkdPVAXLmtdmMhVOeiOoWGYeQJtbU8p6bDQe0FRURG9x9oR7FPbpt2fDGP+ieEoKa0gjEqw9DX5pgvufikX1TImdN0PwCrie54YvgMqpgSOZvM6sFUwNrqENR5M8n0qKaWSHomhdaJJNPi7AnMmdfSy8hPK0eScz8CYpIFya0CaZuwo8L7Dieqgpx7PNx3+WlRX3Tyiq3T1u5jeXOtPpngVYuBTjBaqFdCjPY++ejIh39vuAe/I1qo0jOhEOdulQxVmwwbfVJ6U3MrE=";
-
-            if ((null == user_key_algor) || (user_key_algor.length() == 0)
-                    || (null == user_cipher_algor) || (user_cipher_algor.length() == 0)
-                    || (null == user_key) || (user_key.length() == 0)
-                    || (null == (user_key = decrypt(defaultCipher, defaultKey, user_key)))) {
-                logger.info("Default secret key loaded.");
-                key = defaultKey;
-                cipher = defaultCipher;
-            } else {
-                logger.info("Enter else");
-                key = decodeKey(user_key);
-                cipher = Cipher.getInstance(user_cipher_algor);
-                logger.info("User's Secret Key loaded.");
-            }
-
-            instance = this;
-        } catch (Exception ex) {
-            String errorLog = String.format("ex>>> %s", ex);
-            logger.error(errorLog);
-
         }
+       
+        userKeyAlgor = skp.USER_KEY_ALGOR;
+        userCipherAlgor = skp.USER_CIPHER_ALGOR;
+        user_key = skp.USER_KEY;
+
+        logger.info("########## CONFIG SC ########");
+        logger.info(userKeyAlgor);
+        logger.info(userCipherAlgor);
+        logger.info(user_key);
+
+        if ((null == userKeyAlgor) || (userKeyAlgor.length() == 0)
+            || (null == userCipherAlgor) || (userCipherAlgor.length() == 0)
+            || (null == user_key) || (user_key.length() == 0)
+            || (null == (user_key = decrypt(defaultCipher, defaultKey, user_key))))
+        {
+            logger.info("Default secret key loaded.");
+            key = defaultKey;
+            cipher = defaultCipher;
+        }
+        else
+        {
+            logger.info("Enter else");
+            key = decodeKey(user_key);
+            cipher = Cipher.getInstance(userCipherAlgor);
+            logger.info("User's Secret Key loaded.");
+        }
+
+        return this;
     }
 
-    public String encrypt(final String text) throws UnsupportedEncodingException {
+    public String encrypt(final String text) throws UnsupportedEncodingException
+    {
         return encrypt(this.cipher, this.key, text);
     }
 
-    public String encrypt(final Key key, final String text) throws UnsupportedEncodingException {
+    public String encrypt(final Key key, final String text) throws UnsupportedEncodingException
+    {
         return encrypt(cipher, key, text);
     }
 
     private String encrypt(final Cipher cipher, final Key key,
-            final String text) throws UnsupportedEncodingException {
-
-        return new Base64().encodeToString(encryptStream(cipher, key, text.getBytes(StandardCharsets.UTF_8)));
-
+            final String text) throws UnsupportedEncodingException
+    {
+        
+        return new Base64().encodeAsString(encryptStream(cipher, key, text.getBytes(StandardCharsets.UTF_8)));
+        
     }
 
     public byte[] encryptStream(final Cipher cipher, final Key key,
-            final byte[] stream) {
+            final byte[] stream)
+    {
+        if ((null == cipher) || (null == key) || (null == stream))
+        {
+           
+        }
 
-        try {
+        try
+        {
             cipher.init(Cipher.ENCRYPT_MODE, key);
 
             return cipher.doFinal(stream);
-        } catch (Exception e) {
+        }
+        catch (Exception e)
+        {
             return null;
         }
-
+       
     }
 
-    public String decrypt(final String text) throws UnsupportedEncodingException {
+    public String decrypt(final String text) throws UnsupportedEncodingException
+    {
         return decrypt(this.cipher, this.key, text);
     }
 
-    public String decrypt(final Key key, final String text) throws UnsupportedEncodingException {
+    public String decrypt(final Key key, final String text) throws UnsupportedEncodingException
+    {
         return decrypt(this.cipher, key, text);
     }
 
     private String decrypt(final Cipher cipher, final Key key,
-            final String text) throws UnsupportedEncodingException {
-        String infoLog = String.format("195::text:: %s", text);
+            final String text) throws UnsupportedEncodingException
+    {
+        infoLog = String.format("195::text:: %s", text);
+        logger.info("##### USER_KEY_ALGOR "+ skp.USER_KEY_ALGOR);
         logger.info(infoLog);
         return new String(decryptStream(cipher, key,
-                new Base64().decode(text.getBytes())), "UTF-8");
+                new Base64().decode(text.getBytes())),"UTF-8");
     }
 
     public byte[] decryptStream(final Cipher cipher, final Key key,
-            final byte[] stream) {
-        String infoLog = String.format("cipher:: %s", cipher);
+            final byte[] stream)
+    {
+        infoLog = String.format("cipher:: %s", cipher);
         logger.info(infoLog);
         infoLog = String.format("key:: %s", key);
         logger.info(infoLog);
         infoLog = String.format("stream:: %s", stream);
         logger.info(infoLog);
+        
+        if ((null == cipher) || (null == key) || (null == stream))
+        {
+            
+        }
 
-        try {
+        try
+        {
             logger.info("211:enter try");
             cipher.init(Cipher.DECRYPT_MODE, key);
 
             return cipher.doFinal(stream);
-        } catch (NullPointerException | InvalidKeyException | BadPaddingException | IllegalBlockSizeException e) {
-            String errorLog = String.format("222:Exception: %s", e);
-            logger.error(errorLog);
-            throw new GenericRuntimeException("CMN-R00000",
-                    ErrorMessages.getString("CMN-R00000", e.getMessage()));
+        }
+        catch (InvalidKeyException | BadPaddingException | IllegalBlockSizeException e)
+        {
+            logger.error("222:Exception: "+ e);
+           throw new GenericRuntimeException("CMN-R00000",
+                    ErrorMessages.getString("CMN-R00000",
+                            (null == e)
+                    ? e.toString()
+                    : e.getMessage()));
         }
     }
 
     public Key createKey()
-            throws NoSuchAlgorithmException {
+            throws NoSuchAlgorithmException
+    {
         return createKey("AES", 256);
     }
 
     public Key createKey(final String algorithm)
-            throws NoSuchAlgorithmException {
+            throws NoSuchAlgorithmException
+    {
         KeyGenerator key_gen = KeyGenerator.getInstance(algorithm);
         key_gen.init(new SecureRandom());
 
@@ -209,7 +259,8 @@ public final class SymmetricCipher {
     }
 
     public Key createKey(final String algorithm, final int size)
-            throws NoSuchAlgorithmException {
+            throws NoSuchAlgorithmException
+    {
         KeyGenerator key_gen = KeyGenerator.getInstance(algorithm);
         key_gen.init(size, new SecureRandom());
 
@@ -217,90 +268,116 @@ public final class SymmetricCipher {
     }
 
     public static String encodeKey(final Key givenKey)
-            throws Exception {
-        if (null == givenKey) {
-
+            throws Exception
+    {
+        if (null == givenKey)
+        {
+           
         }
 
         ByteArrayOutputStream baos = null;
         ObjectOutputStream oos = null;
+        
 
-        try {
+        try
+        {
             baos = new ByteArrayOutputStream();
             oos = new ObjectOutputStream(baos);
             oos.writeObject(givenKey);
 
-            return new Base64().encodeToString(baos.toByteArray());
-        } catch (IOException e) {
-            return null;
-        } finally {
-            if (null != oos) {
+            return new Base64().encodeAsString(baos.toByteArray());
+        }
+        catch (IOException e)
+        {
+           return null;
+        }
+        finally
+        {
+            if (null != oos)
+            {
                 oos.close();
                 oos = null;
             }
 
-            if (null != baos) {
+            if (null != baos)
+            {
                 baos.close();
                 baos = null;
             }
         }
-
+        
     }
 
     public static Key decodeKey(final String encodedKey)
-            throws Exception {
+            throws Exception
+    {
+        if ((null == encodedKey) || (encodedKey.length() == 0))
+        {
+            
+        }
 
         ByteArrayInputStream bais = null;
         ObjectInputStream ois = null;
+        
 
-        try {
+        try
+        {
             byte[] raw = new Base64().decode(encodedKey.getBytes());
             bais = new ByteArrayInputStream(raw);
             ois = new ObjectInputStream(bais);
             return ((Key) ois.readObject());
-        } catch (IOException e) {
+        }
+        catch (IOException e)
+        {
             throw new Exception(e);
-        } catch (ClassNotFoundException e) {
-            return null;
-
-        } catch (NullPointerException e) {
-            return null;
-
-        } finally {
-            if (null != ois) {
+        }
+        catch (ClassNotFoundException e)
+        {
+           return null;
+                   
+        }
+        finally
+        {
+            if (null != ois)
+            {
                 ois.close();
                 ois = null;
             }
 
-            if (null != bais) {
+            if (null != bais)
+            {
                 bais.close();
                 bais = null;
             }
         }
-
+        
     }
 
     public void createSecretKeyFile(final File file)
-            throws Exception {
+            throws Exception
+    {
         createSecretKeyFile(DEFAULT_KEY_ALGORITHM, 0,
                 DEFAULT_CIPHER_ALGORITHM, defaultKey, file);
     }
 
     public void createSecretKeyFile(final Key key, final File file)
-            throws Exception {
+            throws Exception
+    {
         createSecretKeyFile(key, this.cipher, this.key, file);
     }
 
     public void createSecretKeyFile(final String algorithm, final int keyLength,
             final String cipherAlgor, final File file)
-            throws Exception {
+            throws Exception
+    {
         createSecretKeyFile(algorithm, keyLength, cipherAlgor, defaultKey,
                 file);
     }
 
     private void createSecretKeyFile(final String algorithm, final int keyLength,
             final String cipherAlgor, final Key internalKey, final File file)
-            throws Exception {
+            throws Exception
+    {
         Key new_key = ((keyLength > 0)
                 ? createKey(algorithm, keyLength)
                 : createKey(algorithm));
@@ -310,64 +387,86 @@ public final class SymmetricCipher {
 
     private void createSecretKeyFile(final Key key, final String cipherAlgor,
             final Key encKey, final File file)
-            throws Exception {
-        Cipher ciphers = Cipher.getInstance(cipherAlgor);
-        createSecretKeyFile(key, ciphers, encKey, file);
+            throws Exception
+    {
+        Cipher cipher = Cipher.getInstance(cipherAlgor);
+        createSecretKeyFile(key, cipher, encKey, file);
     }
 
     private void createSecretKeyFile(final Key key, final Cipher cipher,
             final Key encKey, final File file)
-            throws Exception {
-
+            throws Exception
+    {
+        String key_string = encrypt(cipher, encKey, encodeKey(key));
         FileWriter fw = new FileWriter(file);
 
-        try {
-            String key_string = encrypt(cipher, encKey, encodeKey(key));
+        try
+        {
             fw.write(key_string);
-        } finally {
+        }
+        finally
+        {
             fw.close();
             fw = null;
         }
     }
 
-    public Key loadKey(final File file) throws Exception {
+    public Key loadKey(final File file) throws Exception
+    {
+        if (null == file)
+        {
+            
+        }
+
+        if (!file.exists())
+        {
+            
+        }
 
         FileReader fis = new FileReader(file);
 
-        try {
-            StringBuilder buffer = new StringBuilder();
+        try
+        {
+            StringBuffer buffer = new StringBuffer();
             char[] ch = new char[100];
             int bytes_read;
 
-            while (-1 != (bytes_read = fis.read(ch))) {
+            while (-1 != (bytes_read = fis.read(ch)))
+            {
                 buffer.append(ch, 0, bytes_read);
             }
 
             return loadKey(buffer.toString());
-        } finally {
+        }
+        finally
+        {
             fis.close();
             fis = null;
         }
     }
 
     public Key loadKey(String encryptedKey)
-            throws Exception {
+        throws Exception
+    {
         return decodeKey(decrypt(encryptedKey));
     }
 
-    public Cipher getCipher() {
+    public Cipher getCipher()
+    {
         return this.cipher;
     }
 
     public Cipher getCipher(final Key key) throws NoSuchAlgorithmException,
-            NoSuchPaddingException {
-        Cipher ciphers = Cipher.getInstance(key.getAlgorithm());
+            NoSuchPaddingException
+    {
+        Cipher cipher = Cipher.getInstance(key.getAlgorithm());
 
-        return ciphers;
+        return cipher;
     }
 
-    public static synchronized SymmetricCipher getInstance()
-            throws Exception {
-        return ((null == instance) ? new SymmetricCipher() : instance);
-    }
+    // public static synchronized SymmetricCipher getInstance()
+    //         throws Exception
+    // {
+    //     return ((null == instance) ? new SymmetricCipher() : instance);
+    // }
 }

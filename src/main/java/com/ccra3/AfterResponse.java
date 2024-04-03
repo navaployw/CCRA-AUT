@@ -26,17 +26,24 @@ import org.springframework.web.context.request.ServletRequestAttributes;
 @Component
 public class AfterResponse {
     private final Logger logger = (Logger) LoggerFactory.getLogger(this.getClass());
-    final String ai_code = "ai_code";
-    final String err00041 = "00041";
-    final String Invalid_credentials = "Invalid credentials.";
-    final String usernameSt = "username";
-    final String passwordSt = "password";
-     @Autowired
+
+    @Autowired
     SpmGroupService spmGroup;
     @Autowired
     TrnJsonService trnJson;
     @Autowired
     ApiTokenService apiToken;
+    @Autowired
+    private SymmetricCipher cipher;
+
+
+    final String ai_code = "ai_code";
+    final String err00041 = "00041";
+    final String Invalid_credentials = "Invalid credentials.";
+    final String usernameSt = "username";
+    final String passwordSt = "password";
+    
+
     private String userId;
     private String password;
     private String userIdEnc;
@@ -45,10 +52,13 @@ public class AfterResponse {
     HttpServletResponse response; 
     @Autowired
     private ViewApiUserService userService;
+    @Autowired
+    AesEcbEncryptDecrypt encryptObject;
+
     public ResponseConfig beforeBodyWrite(String body) {
         ResponseConfig res = new ResponseConfig(); 
         try {
-            AesEcbEncryptDecrypt encryptObject = new AesEcbEncryptDecrypt();
+            
             String infoLog = String.format("body::  %s",body);
 //            logger.info(infoLog);
 //            infoLog = String.format("returnType::  %s",returnType);
@@ -81,7 +91,7 @@ public class AfterResponse {
                 String authorization = requestHttp.getHeader("Authorization");
                 infoLog = String.format("authorization::  %s",authorization);
                 logger.info(infoLog);
-               SymmetricCipher cy = SymmetricCipher.getInstance();
+                SymmetricCipher cy = cipher.builder();
                 TrnJson trnJsonObjRequest = new TrnJson();
                 TrnJson trnJsonObjResponse = new TrnJson();
 

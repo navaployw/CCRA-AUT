@@ -3,7 +3,7 @@
  * To change this template file, choose Tools | Templates
  * and open the template in the editor.
  */
-package com.javainuse.config;
+package com.ccra3;
 public class ClientModel {
     
     private String clientId;
