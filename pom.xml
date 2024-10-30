@@ -28,7 +28,7 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
-            <version>3.2.2</version>
+            <version>3.2.11</version>
              <exclusions>
                 <exclusion>
                     <groupId>com.nimbusds</groupId>
@@ -122,7 +122,7 @@
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-oauth2-authorization-server</artifactId>
-            <version>1.2.3</version>
+            <version>1.2.7</version>
         </dependency>
         <!--
         <dependency>
@@ -153,7 +153,7 @@
         <dependency>
             <groupId>org.springframework.boot</groupId>
             <artifactId>spring-boot-starter-data-jpa</artifactId>
-            <version>3.0.3</version>
+            <version>3.2.11</version>
         </dependency>
         <dependency>
             <groupId>arg</groupId>
@@ -168,7 +168,7 @@
         <dependency>
             <groupId>org.springframework.security</groupId>
             <artifactId>spring-security-web</artifactId>
-            <version>6.2.3</version>
+            <version>6.2.7</version>
         </dependency>
         <dependency>
             <groupId>org.apache.tomcat.embed</groupId>
